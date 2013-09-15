@@ -79,8 +79,10 @@ class Plugin:
                             # return without adding this to their last messages
                             return
                     elif mode == 'tr' or mode == 'y':
-                        if pattern and replacement and len(pattern) == len(replacement):
+                        if pattern and replacement:
                             last_message = their_messages[0]
+                            if len(pattern) > len(replacement):
+                                replacement += replacement[-1] * (len(pattern) - len(replacement))
                             body = last_message.translate(dict(zip(map(ord, pattern), replacement)))
                             self.controller.privmsg(msg.channel, '{}: {}'.format(msg.nick, body))
                         else:

@@ -13,7 +13,10 @@ DISCOURSE_FORUM_BASE = 'https://forum.groklearning.com'
 class Plugin(object):
 	def load(self, bot, config):
 		self.bot = bot
-		self.cookieString = 'grok_session=' + config['ck_session'] + '; _t=' + config['ck_t'] + '; grok_discourse=' + config['ck_discourse']
+		self.session = requests.Session()
+		self.session.cookies.set('grok_session', config['ck_session'], domain='.groklearning.com')
+		self.session.cookies.set('_t', config['ck_t'], domain='.groklearning.com')
+		self.session.cookies.set('grok_discourse', config['ck_discourse'], domain='forum.groklearning.com')
 		self.notifyChan = config['notify_chan']
 		self.ignoreThreads = config['ignore_threads']
 		self.catRegexp = config['category_regexp']
@@ -24,15 +27,8 @@ class Plugin(object):
 		self._loadCategories()
 		self._resetSeenPosts()
 
-	def _getHeaders(self):
-		return {
-			'cookie': self.cookieString,
-			'user-agent': 'ninjabot web.grok (like Gecko; rv:1.0) AppleWebKit/367.5 Gecko/20100101 Firefox/41.0'
-		}
-
 	def _loadCategories(self):
-		global DISCOURSE_FORUM_BASE
-		r = requests.get(DISCOURSE_FORUM_BASE + '/categories.json', headers=self._getHeaders())
+		r = requests.get(DISCOURSE_FORUM_BASE + '/categories.json')
 		obj = r.json()['category_list']
 		for cat in obj['categories']:
 			if re.search(self.catRegexp, cat['slug']):
@@ -41,8 +37,7 @@ class Plugin(object):
 				#print("Found cat id",cat['id'],"-",cat['name'])
 
 	def _forEachLatestPost(self, during, after=lambda: False):
-		global DISCOURSE_FORUM_BASE
-		r = requests.get(DISCOURSE_FORUM_BASE + '/latest.json', headers=self._getHeaders())
+		r = requests.get(DISCOURSE_FORUM_BASE + '/latest.json')
 		obj = r.json()
 		for topic in obj['topic_list']['topics']:
 			during(topic)
